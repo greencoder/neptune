@@ -124,7 +124,7 @@ The easiest way to schedule jobs is to use `cron`. For example, you could run st
 
 ## Using the Optional Scheduler ##
 
-The system also comes with a scheduler that reads a JSON file to schedule sprinkler operations. See the [a docs/scheduler.md](scheduler documentation) for details.
+The system also comes with a scheduler that reads a JSON file to schedule sprinkler operations. See the (scheduler documentation)[a docs/scheduler.md] for details.
 
 ## Trimming log files ##
 
