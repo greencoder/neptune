@@ -138,7 +138,7 @@ The system does not use Python logging, it just writes to a `log.txt` file. Use 
 
 Running software that controls water valves has risk; you wouldn't want to get into a situation where a valve is started and the software does not turn it off.
 
-A number of safeguards have been written to mitigate this risk. See the [safeguards documentation](docs/safeguards/md) for important details.
+A number of safeguards have been written to mitigate this risk. See the [safeguards documentation](docs/safeguards.md) for important details.
 
 # Feedback #
 
