@@ -134,6 +134,12 @@ The system does not use Python logging, it just writes to a `log.txt` file. Use 
 @daily cd <code directory> && tail -1000 log.txt > log.tmp && mv log.tmp log.txt
 ```
 
+# Safeguards #
+
+Running software that controls water valves has risk; you wouldn't want to get into a situation where a valve is started and the software does not turn it off.
+
+A number of safeguards have been written to mitigate this risk. See the [safeguards documentation](docs/safeguards/md) for important details.
+
 # Feedback #
 
 I welcome any feedback or advice you are willing to offer. You can use the issues tab in Github or reach out to me at snewman18 [at gmail dot com].
