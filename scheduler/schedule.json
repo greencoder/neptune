@@ -1,0 +1,12 @@
+[
+    {
+        "station": 1,
+        "minutes": 15,
+        "start": "13:01",
+        "days": [
+            "Sunday",
+            "Wednesday",
+            "Friday"
+        ]
+    }
+]
