@@ -1,3 +1,6 @@
 *.pyc
 log.txt
 old/
+*.pid
+DELAY-*
+STANDBY*

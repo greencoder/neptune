@@ -3,6 +3,8 @@ import datetime
 import os
 import sys
 
+CUR_DIR = os.path.dirname(os.path.realpath(__file__))
+
 try:
     import RPi.GPIO as GPIO
 except ImportError:
@@ -30,6 +32,7 @@ except ImportError:
             return
 
     GPIO = MockGPIO()
+
 
 class OpenSprinkler():
 
@@ -118,7 +121,7 @@ class OpenSprinkler():
         current program is and when it expires.
         """
         expiration = arrow.utcnow().replace(minutes=+minutes_to_run).isoformat()
-        file_path = '%s.pid' % self.pid
+        file_path = os.path.join(CUR_DIR, '%s.pid' % self.pid)
         self.log("Creating pid file: %s" % file_path)
         with open(file_path, 'w') as f:
             f.write("%s" % expiration)
@@ -127,7 +130,7 @@ class OpenSprinkler():
         """
         Handles removal of the PID file.
         """
-        file_path = '%s.pid' % self.pid
+        file_path = os.path.join(CUR_DIR, '%s.pid' % self.pid)
         self.log("Removing pid file: %s" % file_path)
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -161,11 +164,16 @@ class OpenSprinkler():
         """
         self.log("Operating station %d for %d minutes." % (station_number, minutes))
 
+        # Check to see if the system is in standby mode
+        if self.check_for_standby():
+            self.log('Standby mode is in effect. Job will not run.')
+            return False
+
         # Check to see if a delay is in effect
         delay = self.check_for_delay(station_number)
         if delay:
             self.log("Delay in effect until %s. Job will not run." % delay)
-            return
+            return False
 
         # First, set all stations to zero
         self.station_values = [0] * self.number_of_stations
@@ -184,6 +192,8 @@ class OpenSprinkler():
 
         # Create a filesystem flag to indicate that the system is running
         self._create_pid_file(minutes)
+        
+        return True
 
     def reset_all_stations(self):
         """
@@ -199,15 +209,24 @@ class OpenSprinkler():
 
     def remove_delay(self, station):
         """
-        Removes a delay file for a station
+        Removes a delay file for a station. If station is zero,
+        then we need to remove all delay files.
         """
-        self.log("Removing delay file for station %d" % station)
-        delay_file_path = 'DELAY-%d' % station
-        if os.path.exists(delay_file_path):
-            os.remove(delay_file_path)
+        if station == 0:
+            # 0 is the number for "all stations"
+            self.log('Removing all delay files')
+            pid_files = [f for f in os.listdir(CUR_DIR) if f.startswith("DELAY-")]
+            for pid_file in pid_files:
+                os.remove(pid_file)
             return True
         else:
-            return False
+            self.log("Removing delay file for station %d" % station)
+            delay_file_path = 'DELAY-%d' % station
+            if os.path.exists(delay_file_path):
+                os.remove(delay_file_path)
+                return True
+            else:
+                return False
 
     def create_delay(self, station, hours):
         """
@@ -220,18 +239,51 @@ class OpenSprinkler():
         # Write out the DELAY file and make the body the expiration time.
         self.log("Creating delay file for station %d with expiration %s" % (station, expiration))
 
-        delay_file_path = 'DELAY-%d' % station
+        delay_file_path = os.path.join(CUR_DIR, 'DELAY-%d' % station)
         with open(delay_file_path, 'w') as f:
             f.write(expiration)
 
         return True
+
+    def create_standby(self):
+        """
+        Creates a file called STANDBY in the root directory. This file
+        prevents all station operations.
+        """
+        standby_file_path = os.path.join(CUR_DIR, 'STANDBY')
+        
+        # If the file already exists, return false
+        if os.path.exists(standby_file_path):
+            return False
+        else:
+            with open(standby_file_path, 'w') as f:
+                f.write('%s' % datetime.datetime.now())
+            return True
+
+    def remove_standby(self):
+        """
+        Removes the file called STANDBY in the root directory.
+        """
+        standby_file_path = os.path.join(CUR_DIR, 'STANDBY')
+        if os.path.exists(standby_file_path):
+            os.remove(standby_file_path)
+            return True
+        else:
+            return False
+
+    def check_for_standby(self):
+        """
+        Look at the filesystem to see if a STANDBY file exists.
+        """
+        standby_file_path = os.path.join(CUR_DIR, 'STANDBY')
+        return os.path.exists(standby_file_path)
 
     def check_for_delay(self, station):
         """
         Look at the filesystem to see if a DELAY file exists for a station. If the
         file does exist, open it up to see if it's expired. If so, remove the file.
         """
-        delay_file_path = 'DELAY-%d' % station
+        delay_file_path = os.path.join(CUR_DIR, 'DELAY-%d' % station)
 
         # If the delay file exists, see if it's valid
         if os.path.exists(delay_file_path):
@@ -264,10 +316,11 @@ class OpenSprinkler():
     def log(self, message):
         now_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         msg = '%s\t\t%s\n' % (now_time, message)
-        file_path = 'log.txt'
+        file_path = os.path.join(CUR_DIR, 'log.txt')
         print msg.strip()
         with open(file_path, 'a') as f:
-            f.write('%s\t%s\n' % (now_time, message))
+            f.write('%s\t\t%s\n' % (now_time, message))
+
 
     def __init__(self, debug=False, number_of_stations=8):
 
@@ -293,5 +346,5 @@ class OpenSprinkler():
 
 
 if __name__ == "__main__":
-    sys.exit("This file cannot be run directly.")
+    sys.exit('This file cannot be run directly.')
 
